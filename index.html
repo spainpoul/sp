@@ -1,0 +1,302 @@
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Rendimientos</title>
+    <!-- Tailwind CSS CDN para un estilo moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type="number"] { 
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8">
+
+<div class="container mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+    <h1 class="text-3xl font-bold text-center text-blue-800 mb-6">Calculadora de Rendimiento Compuesto</h1>
+    
+    <form id="calcForm" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div>
+                <label for="capitalInicial" class="block text-sm font-medium text-gray-700">Capital Inicial (€):</label>
+                <input type="number" id="capitalInicial" value="10000" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+            </div>
+            <div>
+                <label for="fechaInicio" class="block text-sm font-medium text-gray-700">Fecha de Inicio:</label>
+                <input type="date" id="fechaInicio" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+            </div>
+            <div>
+                <label for="rendimientoMensual" class="block text-sm font-medium text-gray-700">Rendimiento Mensual (%):</label>
+                <input type="number" id="rendimientoMensual" step="0.01" value="0.7" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+            </div>
+            <div>
+                <label for="duracion" class="block text-sm font-medium text-gray-700">Duración (meses):</label>
+                <input type="number" id="duracion" value="24" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+            </div>
+        </div>
+
+        <!-- Nueva sección para aportaciones y retiradas con selector de tipo -->
+        <div class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-300">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Aportaciones y Retiradas</h2>
+            <div id="movimientosContainer" class="space-y-4 mb-4">
+                <!-- Aquí se añadirán dinámicamente los campos de movimiento -->
+            </div>
+            <button type="button" id="addMovimientoBtn" class="w-full text-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md font-medium hover:bg-blue-50 transition-colors">
+                Añadir movimiento
+            </button>
+        </div>
+        
+        <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-md font-semibold hover:bg-blue-700 transition-colors shadow-md">
+            Calcular Rendimientos
+        </button>
+    </form>
+
+    <div class="results mt-8" id="results" style="display:none;">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Resultados</h2>
+        
+        <div id="chart-container" class="bg-gray-50 p-4 rounded-lg border border-gray-300 mb-6">
+            <canvas id="rendimientoChart" class="w-full h-96"></canvas>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left rounded-lg overflow-hidden border border-gray-300">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <!-- Nueva columna para el índice del mes -->
+                        <th class="p-4 font-semibold text-gray-700">Índice</th>
+                        <th class="p-4 font-semibold text-gray-700">Fecha</th>
+                        <th class="p-4 font-semibold text-gray-700">Capital al Inicio</th>
+                        <th class="p-4 font-semibold text-gray-700">Rendimiento del Mes</th>
+                        <th class="p-4 font-semibold text-gray-700">Movimiento (Dep./Ret.)</th>
+                        <th class="p-4 font-semibold text-gray-700">Capital Final</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody" class="bg-white divide-y divide-gray-200">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Firma del autor -->
+    <div class="mt-8 pt-4 text-center text-gray-500 text-sm border-t border-gray-200">
+        <p>Autor: SpainPouL</p>
+    </div>
+</div>
+
+<script>
+    // Establecer la fecha de hoy por defecto en el campo de fecha
+    document.getElementById('fechaInicio').valueAsDate = new Date();
+
+    const form = document.getElementById('calcForm');
+    const resultsDiv = document.getElementById('results');
+    const resultsBody = document.getElementById('resultsBody');
+    const movimientosContainer = document.getElementById('movimientosContainer');
+    const addMovimientoBtn = document.getElementById('addMovimientoBtn');
+    
+    let myChart = null;
+    let movimientos = []; // Array para almacenar los movimientos
+
+    // Función para crear un nuevo campo de movimiento
+    function createMovimientoInput() {
+        const index = movimientos.length;
+        const newMovimientoDiv = document.createElement('div');
+        newMovimientoDiv.classList.add('flex', 'space-x-2', 'items-end');
+        newMovimientoDiv.innerHTML = `
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">Mes del Movimiento:</label>
+                <input type="number" value="${index + 1}" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm movimiento-mes">
+            </div>
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">Tipo:</label>
+                <select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm movimiento-tipo">
+                    <option value="1">Aportación</option>
+                    <option value="-1">Retirada</option>
+                </select>
+            </div>
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">Cantidad (€):</label>
+                <input type="number" value="100" step="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm movimiento-cantidad">
+            </div>
+            <button type="button" class="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition-colors" onclick="removeMovimiento(this)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        `;
+        movimientosContainer.appendChild(newMovimientoDiv);
+        movimientos.push({ mes: index + 1, cantidad: 100, tipo: 1 });
+    }
+
+    // Función para eliminar un campo de movimiento
+    window.removeMovimiento = function(button) {
+        const divToRemove = button.parentNode;
+        divToRemove.remove();
+        updateMovimientosArray();
+    };
+
+    // Función para actualizar el array de movimientos en base a los inputs del DOM
+    function updateMovimientosArray() {
+        movimientos = [];
+        const movimientoInputs = movimientosContainer.querySelectorAll('.flex');
+        movimientoInputs.forEach(inputDiv => {
+            const mesInput = inputDiv.querySelector('.movimiento-mes');
+            const tipoInput = inputDiv.querySelector('.movimiento-tipo');
+            const cantidadInput = inputDiv.querySelector('.movimiento-cantidad');
+            if (mesInput && cantidadInput && tipoInput) {
+                movimientos.push({
+                    mes: parseInt(mesInput.value),
+                    cantidad: parseFloat(cantidadInput.value),
+                    tipo: parseInt(tipoInput.value)
+                });
+            }
+        });
+    }
+
+    // Event listener para el botón de añadir movimiento
+    addMovimientoBtn.addEventListener('click', createMovimientoInput);
+
+    // Event listener para el formulario principal
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Evita que la página se recargue
+
+        const capitalInicial = parseFloat(document.getElementById('capitalInicial').value);
+        const fechaInicio = new Date(document.getElementById('fechaInicio').value);
+        const duracion = parseInt(document.getElementById('duracion').value);
+        const rendimientoMensual = parseFloat(document.getElementById('rendimientoMensual').value);
+
+        // Actualizar el array de movimientos antes de calcular
+        updateMovimientosArray();
+
+        // Validar los campos principales
+        if (isNaN(capitalInicial) || isNaN(rendimientoMensual) || isNaN(duracion) || !fechaInicio.getTime()) {
+             // Usar un cuadro de diálogo personalizado en lugar de alert()
+            showCustomAlert('Por favor, introduce valores válidos para todos los campos principales.');
+            return;
+        }
+
+        // Limpiar resultados anteriores
+        resultsBody.innerHTML = '';
+        if (myChart) {
+            myChart.destroy();
+        }
+        
+        const rendimientoMensualDecimal = rendimientoMensual / 100;
+        let capitalActual = capitalInicial;
+
+        const labels = [];
+        const dataCapital = [];
+        
+        const formatter = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
+
+        // Añadir la fila inicial a la tabla (Índice 0)
+        const initialRow = resultsBody.insertRow();
+        initialRow.innerHTML = `
+            <td class="p-4">0</td>
+            <td class="p-4">${fechaInicio.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })} (Inicio)</td>
+            <td class="p-4">-</td>
+            <td class="p-4">-</td>
+            <td class="p-4">-</td>
+            <td class="p-4 font-semibold">${formatter.format(capitalActual)}</td>
+        `;
+
+        for (let i = 0; i < duracion; i++) {
+            let fechaMes = new Date(fechaInicio);
+            fechaMes.setMonth(fechaInicio.getMonth() + i + 1);
+
+            let capitalInicioMes = capitalActual;
+            let movimientoDelMes = 0;
+            let movimientoTexto = '-';
+            let movimientoClass = '';
+
+            // Buscar si hay un movimiento para este mes
+            const movimiento = movimientos.find(m => m.mes === i + 1);
+            if (movimiento) {
+                movimientoDelMes = movimiento.cantidad * movimiento.tipo;
+                movimientoTexto = movimiento.tipo > 0 ? `Aportación: ${formatter.format(movimiento.cantidad)}` : `Retirada: ${formatter.format(movimiento.cantidad)}`;
+                movimientoClass = movimiento.tipo > 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium';
+                capitalActual += movimientoDelMes;
+            }
+
+            // Calcular el rendimiento del mes sobre el capital ajustado (si hay movimiento)
+            const rendimientoEsteMes = capitalActual * rendimientoMensualDecimal;
+            capitalActual += rendimientoEsteMes;
+
+            // Añadir datos a la tabla
+            const newRow = resultsBody.insertRow();
+            newRow.innerHTML = `
+                <td class="p-4">${i + 1}</td>
+                <td class="p-4">${fechaMes.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</td>
+                <td class="p-4">${formatter.format(capitalInicioMes)}</td>
+                <td class="p-4">${formatter.format(rendimientoEsteMes)}</td>
+                <td class="p-4 ${movimientoClass}">${movimientoTexto}</td>
+                <td class="p-4 font-semibold">${formatter.format(capitalActual)}</td>
+            `;
+
+            // Preparar datos para la gráfica
+            labels.push(fechaMes.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }));
+            dataCapital.push(capitalActual.toFixed(2));
+        }
+
+        // Mostrar los resultados
+        resultsDiv.style.display = 'block';
+
+        // Crear la gráfica
+        const ctx = document.getElementById('rendimientoChart').getContext('2d');
+        if (myChart) {
+            myChart.destroy();
+        }
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Capital Resultante (€)',
+                    data: dataCapital,
+                    borderColor: '#1d4ed8',
+                    backgroundColor: 'rgba(29, 78, 216, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return formatter.format(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    // Función para un cuadro de diálogo personalizado
+    function showCustomAlert(message) {
+        // En un entorno real, aquí implementarías un modal personalizado
+        // para evitar el uso de `alert()`. Por ejemplo:
+        // const modal = document.createElement('div');
+        // modal.innerHTML = `<div class="modal">...</div>`;
+        // document.body.appendChild(modal);
+        // ...
+        alert(message);
+    }
+</script>
+
+</body>
+</html>
