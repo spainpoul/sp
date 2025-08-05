@@ -24,29 +24,29 @@
 <body class="bg-gray-100 p-4 sm:p-8">
 
 <div class="container mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-    <h1 class="text-3xl font-bold text-center text-blue-800 mb-6">Calculadora de Rendimiento Compuesto</h1>
+    <h1 class="text-3xl font-bold text-center text-blue-800 mb-6">Calculadora de Interés Compuesto</h1>
     
     <form id="calcForm" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
                 <label for="capitalInicial" class="block text-sm font-medium text-gray-700">Capital Inicial (€):</label>
-                <input type="number" id="capitalInicial" value="10000" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+                <input type="number" id="capitalInicial" value="1000" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
             </div>
             <div>
                 <label for="fechaInicio" class="block text-sm font-medium text-gray-700">Fecha de Inicio:</label>
                 <input type="date" id="fechaInicio" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
             </div>
             <div>
-                <label for="rendimientoMensual" class="block text-sm font-medium text-gray-700">Rendimiento Mensual (%):</label>
-                <input type="number" id="rendimientoMensual" step="0.01" value="0.7" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+                <label for="rendimientoMensual" class="block text-sm font-medium text-gray-700">Rendimiento Mensual Predeterminado (%):</label>
+                <input type="number" id="rendimientoMensual" step="0.01" value="10" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
             </div>
             <div>
                 <label for="duracion" class="block text-sm font-medium text-gray-700">Duración (meses):</label>
-                <input type="number" id="duracion" value="24" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+                <input type="number" id="duracion" value="60" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
             </div>
         </div>
 
-        <!-- Nueva sección para aportaciones y retiradas con selector de tipo -->
+        <!-- Sección para aportaciones y retiradas -->
         <div class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-300">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Aportaciones y Retiradas</h2>
             <div id="movimientosContainer" class="space-y-4 mb-4">
@@ -54,6 +54,17 @@
             </div>
             <button type="button" id="addMovimientoBtn" class="w-full text-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md font-medium hover:bg-blue-50 transition-colors">
                 Añadir movimiento
+            </button>
+        </div>
+
+        <!-- Nueva sección para rendimiento mensual por mes -->
+        <div class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-300">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">% Rendimiento Mensual</h2>
+            <div id="rendimientosMensualesContainer" class="space-y-4 mb-4">
+                <!-- Aquí se añadirán dinámicamente los campos de rendimiento por mes -->
+            </div>
+            <button type="button" id="addRendimientoMensualBtn" class="w-full text-center px-4 py-2 border border-purple-600 text-purple-600 rounded-md font-medium hover:bg-purple-50 transition-colors">
+                Añadir % rendimiento específico
             </button>
         </div>
         
@@ -73,10 +84,10 @@
             <table class="w-full text-left rounded-lg overflow-hidden border border-gray-300">
                 <thead class="bg-gray-200">
                     <tr>
-                        <!-- Nueva columna para el índice del mes -->
                         <th class="p-4 font-semibold text-gray-700">Índice</th>
                         <th class="p-4 font-semibold text-gray-700">Fecha</th>
                         <th class="p-4 font-semibold text-gray-700">Capital al Inicio</th>
+                        <th class="p-4 font-semibold text-gray-700">Rendimiento Aplicado (%)</th>
                         <th class="p-4 font-semibold text-gray-700">Rendimiento del Mes</th>
                         <th class="p-4 font-semibold text-gray-700">Movimiento (Dep./Ret.)</th>
                         <th class="p-4 font-semibold text-gray-700">Capital Final</th>
@@ -90,7 +101,7 @@
     
     <!-- Firma del autor -->
     <div class="mt-8 pt-4 text-center text-gray-500 text-sm border-t border-gray-200">
-        <p>Autor: SpainPouL</p>
+        <p>By SpainPouL</p>
     </div>
 </div>
 
@@ -103,13 +114,18 @@
     const resultsBody = document.getElementById('resultsBody');
     const movimientosContainer = document.getElementById('movimientosContainer');
     const addMovimientoBtn = document.getElementById('addMovimientoBtn');
+    const rendimientosMensualesContainer = document.getElementById('rendimientosMensualesContainer');
+    const addRendimientoMensualBtn = document.getElementById('addRendimientoMensualBtn');
     
     let myChart = null;
-    let movimientos = []; // Array para almacenar los movimientos
+    let movimientos = []; // Array para almacenar los movimientos de capital
+    let rendimientosMensuales = []; // Array para almacenar los rendimientos específicos por mes
+
+    // --- Funciones para Movimientos de Capital (Depósitos/Retiradas) ---
 
     // Función para crear un nuevo campo de movimiento
     function createMovimientoInput() {
-        const index = movimientos.length;
+        const index = movimientosContainer.children.length; // Usar la cantidad de hijos para el índice
         const newMovimientoDiv = document.createElement('div');
         newMovimientoDiv.classList.add('flex', 'space-x-2', 'items-end');
         newMovimientoDiv.innerHTML = `
@@ -135,14 +151,14 @@
             </button>
         `;
         movimientosContainer.appendChild(newMovimientoDiv);
-        movimientos.push({ mes: index + 1, cantidad: 100, tipo: 1 });
+        // No añadimos al array aquí, se actualiza al calcular
     }
 
     // Función para eliminar un campo de movimiento
     window.removeMovimiento = function(button) {
         const divToRemove = button.parentNode;
         divToRemove.remove();
-        updateMovimientosArray();
+        updateMovimientosArray(); // Actualizar el array después de eliminar
     };
 
     // Función para actualizar el array de movimientos en base a los inputs del DOM
@@ -166,20 +182,75 @@
     // Event listener para el botón de añadir movimiento
     addMovimientoBtn.addEventListener('click', createMovimientoInput);
 
-    // Event listener para el formulario principal
+    // --- Funciones para Rendimientos Mensuales Específicos ---
+
+    // Función para crear un nuevo campo de rendimiento mensual específico
+    function createRendimientoMensualInput() {
+        const index = rendimientosMensualesContainer.children.length; // Usar la cantidad de hijos para el índice
+        const newRendimientoDiv = document.createElement('div');
+        newRendimientoDiv.classList.add('flex', 'space-x-2', 'items-end');
+        newRendimientoDiv.innerHTML = `
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">Mes del Rendimiento:</label>
+                <input type="number" value="${index + 1}" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm rendimiento-mes">
+            </div>
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">Porcentaje (%):</label>
+                <input type="number" value="10" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm rendimiento-porcentaje">
+            </div>
+            <button type="button" class="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition-colors" onclick="removeRendimientoMensual(this)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        `;
+        rendimientosMensualesContainer.appendChild(newRendimientoDiv);
+        // No añadimos al array aquí, se actualiza al calcular
+    }
+
+    // Función para eliminar un campo de rendimiento mensual
+    window.removeRendimientoMensual = function(button) {
+        const divToRemove = button.parentNode;
+        divToRemove.remove();
+        updateRendimientosMensualesArray(); // Actualizar el array después de eliminar
+    };
+
+    // Función para actualizar el array de rendimientos mensuales en base a los inputs del DOM
+    function updateRendimientosMensualesArray() {
+        rendimientosMensuales = [];
+        const rendimientoInputs = rendimientosMensualesContainer.querySelectorAll('.flex');
+        rendimientoInputs.forEach(inputDiv => {
+            const mesInput = inputDiv.querySelector('.rendimiento-mes');
+            const porcentajeInput = inputDiv.querySelector('.rendimiento-porcentaje');
+            if (mesInput && porcentajeInput) {
+                rendimientosMensuales.push({
+                    mes: parseInt(mesInput.value),
+                    porcentaje: parseFloat(porcentajeInput.value)
+                });
+            }
+        });
+    }
+
+    // Event listener para el botón de añadir rendimiento mensual específico
+    addRendimientoMensualBtn.addEventListener('click', createRendimientoMensualInput);
+
+
+    // --- Lógica Principal del Formulario ---
+
     form.addEventListener('submit', function(event) {
         event.preventDefault(); // Evita que la página se recargue
 
         const capitalInicial = parseFloat(document.getElementById('capitalInicial').value);
         const fechaInicio = new Date(document.getElementById('fechaInicio').value);
         const duracion = parseInt(document.getElementById('duracion').value);
-        const rendimientoMensual = parseFloat(document.getElementById('rendimientoMensual').value);
+        const rendimientoMensualDefault = parseFloat(document.getElementById('rendimientoMensual').value);
 
-        // Actualizar el array de movimientos antes de calcular
+        // Actualizar los arrays de movimientos y rendimientos antes de calcular
         updateMovimientosArray();
+        updateRendimientosMensualesArray();
 
         // Validar los campos principales
-        if (isNaN(capitalInicial) || isNaN(rendimientoMensual) || isNaN(duracion) || !fechaInicio.getTime()) {
+        if (isNaN(capitalInicial) || isNaN(rendimientoMensualDefault) || isNaN(duracion) || !fechaInicio.getTime()) {
              // Usar un cuadro de diálogo personalizado en lugar de alert()
             showCustomAlert('Por favor, introduce valores válidos para todos los campos principales.');
             return;
@@ -191,7 +262,6 @@
             myChart.destroy();
         }
         
-        const rendimientoMensualDecimal = rendimientoMensual / 100;
         let capitalActual = capitalInicial;
 
         const labels = [];
@@ -207,20 +277,23 @@
             <td class="p-4">-</td>
             <td class="p-4">-</td>
             <td class="p-4">-</td>
+            <td class="p-4">-</td>
             <td class="p-4 font-semibold">${formatter.format(capitalActual)}</td>
         `;
 
         for (let i = 0; i < duracion; i++) {
             let fechaMes = new Date(fechaInicio);
             fechaMes.setMonth(fechaInicio.getMonth() + i + 1);
+            const mesActual = i + 1;
 
             let capitalInicioMes = capitalActual;
             let movimientoDelMes = 0;
             let movimientoTexto = '-';
             let movimientoClass = '';
+            let rendimientoMensualAplicado = rendimientoMensualDefault; // Porcentaje de rendimiento para este mes
 
-            // Buscar si hay un movimiento para este mes
-            const movimiento = movimientos.find(m => m.mes === i + 1);
+            // 1. Buscar si hay un movimiento de capital para este mes
+            const movimiento = movimientos.find(m => m.mes === mesActual);
             if (movimiento) {
                 movimientoDelMes = movimiento.cantidad * movimiento.tipo;
                 movimientoTexto = movimiento.tipo > 0 ? `Aportación: ${formatter.format(movimiento.cantidad)}` : `Retirada: ${formatter.format(movimiento.cantidad)}`;
@@ -228,16 +301,24 @@
                 capitalActual += movimientoDelMes;
             }
 
-            // Calcular el rendimiento del mes sobre el capital ajustado (si hay movimiento)
-            const rendimientoEsteMes = capitalActual * rendimientoMensualDecimal;
+            // 2. Buscar si hay un rendimiento mensual específico para este mes
+            const rendimientoEspecifico = rendimientosMensuales.find(r => r.mes === mesActual);
+            if (rendimientoEspecifico) {
+                rendimientoMensualAplicado = rendimientoEspecifico.porcentaje;
+            }
+            const rendimientoMensualDecimalAplicado = rendimientoMensualAplicado / 100;
+
+            // 3. Calcular el rendimiento del mes sobre el capital actual
+            const rendimientoEsteMes = capitalActual * rendimientoMensualDecimalAplicado;
             capitalActual += rendimientoEsteMes;
 
             // Añadir datos a la tabla
             const newRow = resultsBody.insertRow();
             newRow.innerHTML = `
-                <td class="p-4">${i + 1}</td>
+                <td class="p-4">${mesActual}</td>
                 <td class="p-4">${fechaMes.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</td>
                 <td class="p-4">${formatter.format(capitalInicioMes)}</td>
+                <td class="p-4">${rendimientoMensualAplicado.toFixed(2)}%</td>
                 <td class="p-4">${formatter.format(rendimientoEsteMes)}</td>
                 <td class="p-4 ${movimientoClass}">${movimientoTexto}</td>
                 <td class="p-4 font-semibold">${formatter.format(capitalActual)}</td>
@@ -286,15 +367,9 @@
         });
     });
 
-    // Función para un cuadro de diálogo personalizado
+    // Función para un cuadro de diálogo personalizado (en un entorno real, sería un modal)
     function showCustomAlert(message) {
-        // En un entorno real, aquí implementarías un modal personalizado
-        // para evitar el uso de `alert()`. Por ejemplo:
-        // const modal = document.createElement('div');
-        // modal.innerHTML = `<div class="modal">...</div>`;
-        // document.body.appendChild(modal);
-        // ...
-        alert(message);
+        alert(message); // Usado para demostración, reemplazar con un modal en producción
     }
 </script>
 
