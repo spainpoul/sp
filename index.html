@@ -24,13 +24,13 @@
 <body class="bg-gray-100 p-4 sm:p-8">
 
 <div class="container mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-    <h1 class="text-3xl font-bold text-center text-blue-800 mb-6">Calculadora de Rendimiento Compuesto</h1>
+    <h1 class="text-3xl font-bold text-center text-blue-800 mb-6">Calculadora de Interés Compuesto</h1>
     
     <form id="calcForm" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
                 <label for="capitalInicial" class="block text-sm font-medium text-gray-700">Capital Inicial (€):</label>
-                <input type="number" id="capitalInicial" value="10000" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+                <input type="number" id="capitalInicial" value="1000" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
             </div>
             <div>
                 <label for="fechaInicio" class="block text-sm font-medium text-gray-700">Fecha de Inicio:</label>
@@ -38,11 +38,11 @@
             </div>
             <div>
                 <label for="rendimientoMensual" class="block text-sm font-medium text-gray-700">Rendimiento Mensual Predeterminado (%):</label>
-                <input type="number" id="rendimientoMensual" step="0.01" value="0.7" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+                <input type="number" id="rendimientoMensual" step="0.01" value="10" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
             </div>
             <div>
                 <label for="duracion" class="block text-sm font-medium text-gray-700">Duración (meses):</label>
-                <input type="number" id="duracion" value="24" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
+                <input type="number" id="duracion" value="60" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3">
             </div>
         </div>
 
@@ -59,12 +59,12 @@
 
         <!-- Nueva sección para rendimiento mensual por mes -->
         <div class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-300">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Rendimiento Mensual por Mes</h2>
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">% Rendimiento Mensual</h2>
             <div id="rendimientosMensualesContainer" class="space-y-4 mb-4">
                 <!-- Aquí se añadirán dinámicamente los campos de rendimiento por mes -->
             </div>
             <button type="button" id="addRendimientoMensualBtn" class="w-full text-center px-4 py-2 border border-purple-600 text-purple-600 rounded-md font-medium hover:bg-purple-50 transition-colors">
-                Añadir rendimiento mensual específico
+                Añadir % rendimiento específico
             </button>
         </div>
         
@@ -196,7 +196,7 @@
             </div>
             <div class="flex-1">
                 <label class="block text-sm font-medium text-gray-700">Porcentaje (%):</label>
-                <input type="number" value="0.7" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm rendimiento-porcentaje">
+                <input type="number" value="10" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm rendimiento-porcentaje">
             </div>
             <button type="button" class="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition-colors" onclick="removeRendimientoMensual(this)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
